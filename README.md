@@ -57,7 +57,7 @@ This repo is being built incrementally, phase by phase, as a learning +
 portfolio project.
 
 - [x] Phase 1 — Project scaffolding
-- [ ] Phase 2 — UI design
+- [x] Phase 2 — UI design
 - [ ] Phase 3 — Room creation/joining
 - [ ] Phase 4 — Socket.IO signaling
 - [ ] Phase 5 — WebRTC peer connection

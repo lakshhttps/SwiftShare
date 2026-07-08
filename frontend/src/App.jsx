@@ -1,14 +1,29 @@
+import { useState } from "react";
+import { Home } from "./pages/Home";
+import { Room } from "./pages/Room";
+import { ThemeToggle } from "./components/ThemeToggle";
+
+/**
+ * Two "pages", switched by plain state instead of a router library.
+ * With only two screens and no browser back/forward or shareable URLs
+ * needed yet, react-router would be extra weight for no real benefit.
+ * If deep-linking (e.g. /room/123456) becomes a real need later, this
+ * is the point where we'd swap in a router.
+ */
 function App() {
+  const [roomCode, setRoomCode] = useState(null);
+
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-          ShareIt
-        </h1>
-        <p className="mt-2 text-slate-500 dark:text-slate-400">
-          Phase 1 scaffold — UI comes in Phase 2.
-        </p>
+    <div className="relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
       </div>
+
+      {roomCode ? (
+        <Room roomCode={roomCode} onLeaveRoom={() => setRoomCode(null)} />
+      ) : (
+        <Home onEnterRoom={setRoomCode} />
+      )}
     </div>
   );
 }
