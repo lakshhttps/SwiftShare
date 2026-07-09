@@ -3,6 +3,7 @@ import { Card } from "../components/Card";
 import { Button } from "../components/Button";
 import { socket } from "../utils/socket";
 import { getDeviceName } from "../utils/deviceName";
+import { saveActiveRoom } from "../utils/activeRoom";
 
 export function Home({ onEnterRoom }) {
   const [joinCode, setJoinCode] = useState("");
@@ -11,6 +12,7 @@ export function Home({ onEnterRoom }) {
   function handleCreateRoom() {
     const deviceName = getDeviceName();
     socket.emit("create-room", { deviceName }, (response) => {
+      saveActiveRoom(response.roomCode, deviceName);
       onEnterRoom(response.roomCode, response.peers);
     });
   }
@@ -28,6 +30,7 @@ export function Home({ onEnterRoom }) {
           setError(response.error);
           return;
         }
+        saveActiveRoom(response.roomCode, deviceName);
         onEnterRoom(response.roomCode, response.peers);
       }
     );

@@ -41,6 +41,13 @@ export function registerRoomHandlers(io, socket) {
     });
   });
 
+  socket.on("signal", ({ targetSocketId, data }) => {
+    io.to(targetSocketId).emit("signal", {
+      fromSocketId: socket.id,
+      data,
+    });
+  });
+
   socket.on("disconnect", () => {
     const roomCode = socket.data.roomCode;
     if (!roomCode) return;

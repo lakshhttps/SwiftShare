@@ -27,14 +27,23 @@ class RoomManager {
 
   addPeer(code, peer) {
     const room = this.rooms.get(code);
-    if (room) room.peers.set(peer.socketId, peer);
+    if (!room) return;
+    if (room.deleteTimer) {
+      clearTimeout(room.deleteTimer);
+      room.deleteTimer = null;
+    }
+    room.peers.set(peer.socketId, peer);
   }
 
   removePeer(code, socketId) {
     const room = this.rooms.get(code);
     if (!room) return;
     room.peers.delete(socketId);
-    if (room.peers.size === 0) this.rooms.delete(code);
+    if (room.peers.size === 0) {
+      room.deleteTimer = setTimeout(() => {
+        if (room.peers.size === 0) this.rooms.delete(code);
+      }, 10000);
+    }
   }
 
   findRoomBySocketId(socketId) {
