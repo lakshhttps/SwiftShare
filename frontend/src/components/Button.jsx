@@ -1,7 +1,3 @@
-/**
- * Reusable button. `variant` picks a color style, everything else
- * (onClick, disabled, type, etc.) just passes through via ...props.
- */
 export function Button({ children, variant = "primary", className = "", ...props }) {
   const base = "px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
 

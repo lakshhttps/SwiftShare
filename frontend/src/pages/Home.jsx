@@ -1,26 +1,36 @@
 import { useState } from "react";
 import { Card } from "../components/Card";
 import { Button } from "../components/Button";
+import { socket } from "../utils/socket";
+import { getDeviceName } from "../utils/deviceName";
 
-/**
- * Home page: pick to create a new room or join an existing one by code.
- * `onEnterRoom` is called with the room code once the user is "in" —
- * actual socket logic for create/join gets wired up in Phase 3.
- */
 export function Home({ onEnterRoom }) {
   const [joinCode, setJoinCode] = useState("");
+  const [error, setError] = useState("");
 
   function handleCreateRoom() {
-    // Placeholder code — Phase 3 replaces this with a real server-generated code.
-    const tempCode = Math.floor(100000 + Math.random() * 900000).toString();
-    onEnterRoom(tempCode);
+    const deviceName = getDeviceName();
+    socket.emit("create-room", { deviceName }, (response) => {
+      onEnterRoom(response.roomCode, response.peers);
+    });
   }
 
   function handleJoinRoom(e) {
     e.preventDefault();
-    if (joinCode.trim().length === 6) {
-      onEnterRoom(joinCode.trim());
-    }
+    if (joinCode.trim().length !== 6) return;
+
+    const deviceName = getDeviceName();
+    socket.emit(
+      "join-room",
+      { roomCode: joinCode.trim(), deviceName },
+      (response) => {
+        if (response.error) {
+          setError(response.error);
+          return;
+        }
+        onEnterRoom(response.roomCode, response.peers);
+      }
+    );
   }
 
   return (
@@ -48,6 +58,7 @@ export function Home({ onEnterRoom }) {
             Join
           </Button>
         </form>
+        {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
       </Card>
     </div>
   );

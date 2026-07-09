@@ -58,7 +58,7 @@ portfolio project.
 
 - [x] Phase 1 — Project scaffolding
 - [x] Phase 2 — UI design
-- [ ] Phase 3 — Room creation/joining
+- [x] Phase 3 — Room creation/joining
 - [ ] Phase 4 — Socket.IO signaling
 - [ ] Phase 5 — WebRTC peer connection
 - [ ] Phase 6 — File transfer via data channels

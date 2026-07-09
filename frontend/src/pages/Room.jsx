@@ -1,15 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "../components/Card";
 import { Button } from "../components/Button";
+import { socket } from "../utils/socket";
 
-/**
- * Room page: shows the room code to share, and a drop zone for picking files.
- * Files just sit in local state for now — actually sending them over a
- * WebRTC data channel is built in Phase 6.
- */
-export function Room({ roomCode, onLeaveRoom }) {
+export function Room({ roomCode, initialPeers, onLeaveRoom }) {
   const [files, setFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [peers, setPeers] = useState(initialPeers);
+
+  useEffect(() => {
+    function handlePeerJoined(peer) {
+      setPeers((prev) => [...prev, peer]);
+    }
+
+    function handlePeerLeft({ socketId }) {
+      setPeers((prev) => prev.filter((p) => p.socketId !== socketId));
+    }
+
+    socket.on("peer-joined", handlePeerJoined);
+    socket.on("peer-left", handlePeerLeft);
+
+    return () => {
+      socket.off("peer-joined", handlePeerJoined);
+      socket.off("peer-left", handlePeerLeft);
+    };
+  }, []);
 
   function addFiles(fileList) {
     setFiles((prev) => [...prev, ...Array.from(fileList)]);
@@ -21,13 +36,17 @@ export function Room({ roomCode, onLeaveRoom }) {
     addFiles(e.dataTransfer.files);
   }
 
+  const otherPeers = peers.filter((p) => p.socketId !== socket.id);
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4">
       <Card className="w-full max-w-md text-center">
         <p className="text-sm text-slate-500 dark:text-slate-400">Room code</p>
         <p className="text-3xl font-bold tracking-widest text-brand-600">{roomCode}</p>
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-          Waiting for another device to join…
+          {otherPeers.length === 0
+            ? "Waiting for another device to join…"
+            : `Connected: ${otherPeers.map((p) => p.deviceName).join(", ")}`}
         </p>
       </Card>
 

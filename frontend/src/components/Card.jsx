@@ -1,4 +1,3 @@
-/** Simple bordered container used for the create/join panels and the room view. */
 export function Card({ children, className = "" }) {
   return (
     <div

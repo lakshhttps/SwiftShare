@@ -1,10 +1,5 @@
 import { useEffect, useState } from "react";
 
-/**
- * Simple dark mode hook.
- * Reads the saved preference on load, falls back to the OS preference,
- * and toggles a "dark" class on <html> which Tailwind's darkMode:"class" reads.
- */
 export function useDarkMode() {
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("theme");
