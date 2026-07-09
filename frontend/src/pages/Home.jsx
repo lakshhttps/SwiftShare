@@ -38,7 +38,7 @@ export function Home({ onEnterRoom }) {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4">
-      <h1 className="text-4xl font-bold text-slate-900 dark:text-white">ShareIt</h1>
+      <h1 className="text-4xl font-bold text-slate-900 dark:text-white">SwiftShare</h1>
       <p className="text-slate-500 dark:text-slate-400 -mt-4">Send files, peer to peer.</p>
 
       <Card className="w-full max-w-sm text-center">

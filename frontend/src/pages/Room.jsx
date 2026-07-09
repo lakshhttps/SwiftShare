@@ -2,11 +2,28 @@ import { useEffect, useState } from "react";
 import { Card } from "../components/Card";
 import { Button } from "../components/Button";
 import { socket } from "../utils/socket";
+import { useWebRTC } from "../hooks/useWebRTC";
+
+const STATUS_LABELS = {
+  idle: "Waiting for another device to join…",
+  new: "Connecting…",
+  connecting: "Connecting…",
+  connected: "Connected",
+  "channel-open": "Connected",
+  disconnected: "Disconnected",
+  failed: "Connection failed",
+  closed: "Disconnected",
+};
 
 export function Room({ roomCode, initialPeers, onLeaveRoom }) {
   const [files, setFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [peers, setPeers] = useState(initialPeers);
+
+  const otherPeers = peers.filter((p) => p.socketId !== socket.id);
+  const otherSocketId = otherPeers[0]?.socketId ?? null;
+
+  const { connectionState } = useWebRTC(otherSocketId);
 
   useEffect(() => {
     function handlePeerJoined(peer) {
@@ -36,7 +53,9 @@ export function Room({ roomCode, initialPeers, onLeaveRoom }) {
     addFiles(e.dataTransfer.files);
   }
 
-  const otherPeers = peers.filter((p) => p.socketId !== socket.id);
+  const statusLabel = otherSocketId
+    ? STATUS_LABELS[connectionState] ?? "Connecting…"
+    : STATUS_LABELS.idle;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4">
@@ -44,9 +63,7 @@ export function Room({ roomCode, initialPeers, onLeaveRoom }) {
         <p className="text-sm text-slate-500 dark:text-slate-400">Room code</p>
         <p className="text-3xl font-bold tracking-widest text-brand-600">{roomCode}</p>
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-          {otherPeers.length === 0
-            ? "Waiting for another device to join…"
-            : `Connected: ${otherPeers.map((p) => p.deviceName).join(", ")}`}
+          {otherPeers.length > 0 ? `${otherPeers[0].deviceName} — ${statusLabel}` : statusLabel}
         </p>
       </Card>
 

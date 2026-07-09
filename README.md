@@ -1,68 +1,66 @@
-# ShareIt Clone — P2P File Transfer Web App
+# SwiftShare
 
-A SHAREit-inspired app that lets two devices transfer files directly to each
-other using WebRTC data channels. The server only handles "signaling"
-(introducing two peers to each other) — actual file bytes never touch it.
+A web app for sending files directly between two devices using WebRTC, inspired by SHAREit's peer-to-peer transfer model. There's no upload step and no server-side storage — once two devices are connected, files move straight from one browser to the other over a peer-to-peer data channel.
+
+## How it works
+
+1. One device creates a room and gets a 6-digit code (or a QR code to scan).
+2. The other device joins using that code.
+3. A signaling server (Socket.IO) introduces the two devices to each other — this is the only part of the process that touches our server.
+4. The two browsers negotiate a direct WebRTC connection using that introduction.
+5. Files are sliced into chunks and streamed directly across that connection.
 
 ## Tech stack
 
-- **Frontend:** React + JavaScript (JSX) + Vite + Tailwind CSS
+- **Frontend:** React (JavaScript, JSX) + Vite + Tailwind CSS
 - **Backend:** Node.js + Express + Socket.IO
-- **File transfer:** WebRTC Data Channels
-- **Database:** None (rooms are ephemeral, kept in memory)
+- **Transfer:** WebRTC (`RTCPeerConnection` + `RTCDataChannel`)
+- **Database:** None — rooms are ephemeral and live in memory only
 
-## Monorepo layout
+## Project structure
 
 ```
-shareit-clone/
-├── backend/     # Express + Socket.IO signaling server
-└── frontend/    # React + JavaScript + Vite + Tailwind client
+swiftshare/
+├── backend/
+│   └── src/
+│       ├── server.js            Express + Socket.IO bootstrap
+│       ├── socket/roomHandlers.js   Room join/leave + WebRTC signaling relay
+│       └── utils/roomManager.js     In-memory room/peer store
+└── frontend/
+    └── src/
+        ├── pages/                Landing, Home (create/join), Room (transfer)
+        ├── components/           Button, Card, ThemeToggle
+        ├── hooks/                useDarkMode, useWebRTC
+        └── utils/                socket client, signaling, device name, session
 ```
 
-We use two independent npm projects (not a monorepo tool like Nx/Turborepo)
-because the two apps deploy to entirely different platforms (Vercel vs
-Render) and share almost no code — the small duplication in `types/room.js`
-(JSDoc typedefs) is a reasonable trade-off for simplicity.
+## Why these choices
 
-## Why plain JavaScript instead of TypeScript?
+- **No database.** Rooms exist only for the length of a transfer session — an in-memory `Map` is enough, with an intentional trade-off: state resets if the server restarts, and this wouldn't scale across multiple server instances without something like Redis.
+- **Socket.IO over raw WebSockets.** We rely on its automatic reconnection, room broadcasting, and acknowledgement-style callbacks — all things you'd otherwise hand-roll on top of plain WebSockets.
+- **The server never sees file bytes.** Signaling only exchanges small JSON handshake messages (SDP offers/answers, ICE candidates). Actual file data flows directly between browsers over WebRTC.
+- **Plain JavaScript, not TypeScript.** A deliberate choice for this project — trading compile-time type safety for a smaller, simpler codebase.
 
-This project intentionally uses plain JS + JSDoc comments instead of
-TypeScript. JSDoc `@typedef` blocks (see `src/types/room.js` in both
-projects) still give editor autocomplete and documented shapes for the
-Socket.IO event payloads, without a compile step. Trade-off: you lose
-compile-time type checking across files — worth being able to explain that
-trade-off in an interview.
+## Running locally
 
-## Getting started (local dev)
-
-### Backend
+**Backend**
 ```bash
 cd backend
 npm install
 cp .env.example .env
-npm run dev       # http://localhost:4000
+npm run dev
 ```
 
-### Frontend
+**Frontend**
 ```bash
 cd frontend
 npm install
 cp .env.example .env
-npm run dev        # http://localhost:5173
+npm run dev
 ```
+
+Open the frontend URL in two browser tabs (or two devices on the same network) to test a transfer.
 
 ## Status
 
-This repo is being built incrementally, phase by phase, as a learning +
-portfolio project.
-
-- [x] Phase 1 — Project scaffolding
-- [x] Phase 2 — UI design
-- [x] Phase 3 — Room creation/joining
-- [x] Phase 4 — Socket.IO signaling
-- [ ] Phase 5 — WebRTC peer connection
-- [ ] Phase 6 — File transfer via data channels
-- [ ] Phase 7 — Transfer progress/speed
-- [ ] Phase 8 — QR code join
-- [ ] Phase 9 — Reconnection & error handling
-- [ ] Phase 10 — Deployment
+Actively being built in phases: room signaling and WebRTC connection setup are working; file transfer over the data channel, transfer progress, QR code joining, and reconnection handling are in progress.
