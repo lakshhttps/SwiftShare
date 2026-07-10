@@ -1,6 +1,16 @@
 import { roomManager } from "../utils/roomManager.js";
 
 export function registerRoomHandlers(io, socket) {
+  function leaveCurrentRoom() {
+    const roomCode = socket.data.roomCode;
+    if (!roomCode) return;
+
+    roomManager.removePeer(roomCode, socket.id);
+    socket.to(roomCode).emit("peer-left", { socketId: socket.id });
+    socket.leave(roomCode);
+    socket.data.roomCode = null;
+  }
+
   socket.on("create-room", ({ deviceName }, callback) => {
     const roomCode = roomManager.generateRoomCode();
     roomManager.createRoom(roomCode);
@@ -48,11 +58,11 @@ export function registerRoomHandlers(io, socket) {
     });
   });
 
-  socket.on("disconnect", () => {
-    const roomCode = socket.data.roomCode;
-    if (!roomCode) return;
+  socket.on("leave-room", () => {
+    leaveCurrentRoom();
+  });
 
-    roomManager.removePeer(roomCode, socket.id);
-    socket.to(roomCode).emit("peer-left", { socketId: socket.id });
+  socket.on("disconnect", () => {
+    leaveCurrentRoom();
   });
 }

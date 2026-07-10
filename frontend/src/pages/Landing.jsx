@@ -6,11 +6,17 @@ const FEATURES = [
   "Works across desktop and mobile browsers",
 ];
 
+const STEPS = [
+  { number: "1", title: "Create or join", desc: "Start a room and get a 6-digit code, or enter one from another device." },
+  { number: "2", title: "Connect directly", desc: "Both devices link up over a peer-to-peer connection, no middleman." },
+  { number: "3", title: "Send files", desc: "Drag and drop, and files stream straight across, instantly." },
+];
+
 export function Landing({ onGetStarted }) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-16">
-      <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-12 max-w-4xl w-full">
-        <div>
+    <div className="min-h-screen flex flex-col items-center px-4 py-16 gap-24">
+      <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-12 max-w-4xl w-full mt-10">
+        <div className="animate-fade-in-up">
           <h1 className="text-5xl font-bold text-slate-900 dark:text-white tracking-tight">
             SwiftShare
           </h1>
@@ -30,7 +36,10 @@ export function Landing({ onGetStarted }) {
           </Button>
         </div>
 
-        <div className="flex items-center justify-center gap-3">
+        <div
+          className="flex items-center justify-center gap-3 animate-fade-in-up"
+          style={{ animationDelay: "150ms" }}
+        >
           <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-2xl">
             💻
           </div>
@@ -45,6 +54,27 @@ export function Landing({ onGetStarted }) {
           <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-2xl">
             📱
           </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl w-full">
+        <h2 className="text-center text-sm font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-8">
+          How it works
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {STEPS.map((step, i) => (
+            <div
+              key={step.number}
+              className="text-center animate-fade-in-up"
+              style={{ animationDelay: `${200 + i * 120}ms` }}
+            >
+              <div className="w-10 h-10 mx-auto rounded-full bg-brand-600 text-white flex items-center justify-center font-semibold">
+                {step.number}
+              </div>
+              <h3 className="mt-3 font-semibold text-slate-800 dark:text-white">{step.title}</h3>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{step.desc}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { Landing } from "./pages/Landing";
 import { Home } from "./pages/Home";
 import { Room } from "./pages/Room";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { Footer } from "./components/Footer";
 import { socket } from "./utils/socket";
 import { getActiveRoom, clearActiveRoom } from "./utils/activeRoom";
 
@@ -39,6 +40,7 @@ function App() {
   }
 
   function handleLeaveRoom() {
+    socket.emit("leave-room");
     clearActiveRoom();
     setRoom(null);
     setView("home");
@@ -63,6 +65,8 @@ function App() {
           onLeaveRoom={handleLeaveRoom}
         />
       )}
+
+      <Footer />
     </div>
   );
 }

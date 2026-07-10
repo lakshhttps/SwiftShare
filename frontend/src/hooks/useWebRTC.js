@@ -6,8 +6,8 @@ const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
 
 export function useWebRTC(otherSocketId) {
   const [connectionState, setConnectionState] = useState("idle");
+  const [dataChannel, setDataChannel] = useState(null);
   const pcRef = useRef(null);
-  const channelRef = useRef(null);
 
   useEffect(() => {
     if (!otherSocketId) return;
@@ -26,9 +26,15 @@ export function useWebRTC(otherSocketId) {
     };
 
     function setupChannel(channel) {
-      channelRef.current = channel;
-      channel.onopen = () => setConnectionState("channel-open");
-      channel.onclose = () => setConnectionState("channel-closed");
+      channel.binaryType = "arraybuffer";
+      channel.onopen = () => {
+        setConnectionState("channel-open");
+        setDataChannel(channel);
+      };
+      channel.onclose = () => {
+        setConnectionState("channel-closed");
+        setDataChannel(null);
+      };
     }
 
     pc.ondatachannel = (e) => {
@@ -66,10 +72,10 @@ export function useWebRTC(otherSocketId) {
       removeSignalListener();
       pc.close();
       pcRef.current = null;
-      channelRef.current = null;
+      setDataChannel(null);
       setConnectionState("idle");
     };
   }, [otherSocketId]);
 
-  return { connectionState, dataChannel: channelRef.current };
+  return { connectionState, dataChannel };
 }
