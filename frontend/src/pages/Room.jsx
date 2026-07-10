@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Card } from "../components/Card";
 import { Button } from "../components/Button";
+import { ProgressBar } from "../components/ProgressBar";
 import { socket } from "../utils/socket";
 import { useWebRTC } from "../hooks/useWebRTC";
 import { useFileTransfer } from "../hooks/useFileTransfer";
+import { formatBytes, formatSpeed } from "../utils/format";
 
 const STATUS_LABELS = {
   idle: "Waiting for another device to join…",
@@ -26,7 +28,7 @@ export function Room({ roomCode, initialPeers, onLeaveRoom }) {
   const otherSocketId = otherPeers[0]?.socketId ?? null;
 
   const { connectionState, dataChannel } = useWebRTC(otherSocketId);
-  const { receivedFiles, sendFile } = useFileTransfer(dataChannel);
+  const { receivedFiles, sendFile, incomingProgress } = useFileTransfer(dataChannel);
 
   useEffect(() => {
     function handlePeerJoined(peer) {
@@ -57,9 +59,13 @@ export function Room({ roomCode, initialPeers, onLeaveRoom }) {
   }
 
   async function handleSend(index, file) {
-    setFileStatus((prev) => ({ ...prev, [index]: "sending" }));
-    await sendFile(file);
-    setFileStatus((prev) => ({ ...prev, [index]: "sent" }));
+    setFileStatus((prev) => ({ ...prev, [index]: { state: "sending", sentBytes: 0, speed: 0 } }));
+
+    await sendFile(file, (sentBytes, totalBytes, speed) => {
+      setFileStatus((prev) => ({ ...prev, [index]: { state: "sending", sentBytes, speed } }));
+    });
+
+    setFileStatus((prev) => ({ ...prev, [index]: { state: "sent", sentBytes: file.size, speed: 0 } }));
   }
 
   function downloadFile(file) {
@@ -113,26 +119,57 @@ export function Room({ roomCode, initialPeers, onLeaveRoom }) {
         </div>
 
         {files.length > 0 && (
-          <ul className="mt-4 space-y-2 text-sm text-slate-700 dark:text-slate-300">
-            {files.map((file, i) => (
-              <li key={i} className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate">{file.name}</p>
-                  <p className="text-xs text-slate-400">{(file.size / 1024).toFixed(1)} KB</p>
-                </div>
-                <Button
-                  variant="secondary"
-                  className="px-3 py-1 text-xs shrink-0"
-                  disabled={!isChannelOpen || fileStatus[i] === "sending" || fileStatus[i] === "sent"}
-                  onClick={() => handleSend(i, file)}
-                >
-                  {fileStatus[i] === "sent" ? "Sent" : fileStatus[i] === "sending" ? "Sending…" : "Send"}
-                </Button>
-              </li>
-            ))}
+          <ul className="mt-4 space-y-3 text-sm text-slate-700 dark:text-slate-300">
+            {files.map((file, i) => {
+              const status = fileStatus[i];
+              const progress = status ? (status.sentBytes / file.size) * 100 : 0;
+
+              return (
+                <li key={i}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate">{file.name}</p>
+                      <p className="text-xs text-slate-400">
+                        {status?.state === "sending"
+                          ? `${formatBytes(status.sentBytes)} / ${formatBytes(file.size)} — ${formatSpeed(status.speed)}`
+                          : formatBytes(file.size)}
+                      </p>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      className="px-3 py-1 text-xs shrink-0"
+                      disabled={!isChannelOpen || status?.state === "sending" || status?.state === "sent"}
+                      onClick={() => handleSend(i, file)}
+                    >
+                      {status?.state === "sent" ? "Sent" : status?.state === "sending" ? "Sending…" : "Send"}
+                    </Button>
+                  </div>
+                  {status?.state === "sending" && (
+                    <div className="mt-1.5">
+                      <ProgressBar progress={progress} />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </Card>
+
+      {incomingProgress && (
+        <Card className="w-full max-w-md">
+          <p className="text-sm text-slate-700 dark:text-slate-300 truncate">
+            Receiving {incomingProgress.name}
+          </p>
+          <p className="text-xs text-slate-400 mt-0.5">
+            {formatBytes(incomingProgress.receivedBytes)} / {formatBytes(incomingProgress.size)} —{" "}
+            {formatSpeed(incomingProgress.speed)}
+          </p>
+          <div className="mt-2">
+            <ProgressBar progress={(incomingProgress.receivedBytes / incomingProgress.size) * 100} />
+          </div>
+        </Card>
+      )}
 
       {receivedFiles.length > 0 && (
         <Card className="w-full max-w-md">
@@ -142,7 +179,7 @@ export function Room({ roomCode, initialPeers, onLeaveRoom }) {
               <li key={i} className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate">{file.name}</p>
-                  <p className="text-xs text-slate-400">{(file.size / 1024).toFixed(1)} KB</p>
+                  <p className="text-xs text-slate-400">{formatBytes(file.size)}</p>
                 </div>
                 <Button
                   className="px-3 py-1 text-xs shrink-0"

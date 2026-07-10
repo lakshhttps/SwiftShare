@@ -38,17 +38,19 @@ export function Home({ onEnterRoom }) {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 py-16">
-      <h1 className="text-4xl font-bold text-slate-900 dark:text-white">SwiftShare</h1>
-      <p className="text-slate-500 dark:text-slate-400 -mt-4">Send files, peer to peer.</p>
+      <h1 className="text-4xl font-bold text-slate-900 dark:text-white animate-fade-in-up">SwiftShare</h1>
+      <p className="text-slate-500 dark:text-slate-400 -mt-4 animate-fade-in-up" style={{ animationDelay: "80ms" }}>
+        Send files, peer to peer.
+      </p>
 
-      <Card className="w-full max-w-sm text-center">
+      <Card className="w-full max-w-sm text-center animate-fade-in-up" style={{ animationDelay: "160ms" }}>
         <h2 className="font-semibold text-slate-800 dark:text-white mb-3">Create a room</h2>
         <Button onClick={handleCreateRoom} className="w-full">
           Create Room
         </Button>
       </Card>
 
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm animate-fade-in-up" style={{ animationDelay: "240ms" }}>
         <h2 className="font-semibold text-slate-800 dark:text-white mb-3 text-center">Join a room</h2>
         <form onSubmit={handleJoinRoom} className="flex gap-2">
           <input
