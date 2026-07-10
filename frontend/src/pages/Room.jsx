@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { Card } from "../components/Card";
 import { Button } from "../components/Button";
 import { ProgressBar } from "../components/ProgressBar";
@@ -73,8 +74,10 @@ export function Room({ roomCode, initialPeers, onLeaveRoom }) {
     const link = document.createElement("a");
     link.href = url;
     link.download = file.name;
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   const isChannelOpen = connectionState === "channel-open";
@@ -91,6 +94,16 @@ export function Room({ roomCode, initialPeers, onLeaveRoom }) {
           {otherPeers.length > 0 ? `${otherPeers[0].deviceName} — ${statusLabel}` : statusLabel}
         </p>
       </Card>
+
+      {otherPeers.length === 0 && (
+        <Card className="w-full max-w-md flex flex-col items-center gap-3">
+          <QRCodeSVG
+            value={`${window.location.origin}${window.location.pathname}?room=${roomCode}`}
+            size={160}
+          />
+          <p className="text-xs text-slate-400">Scan to join from another device</p>
+        </Card>
+      )}
 
       <Card className="w-full max-w-md">
         <div

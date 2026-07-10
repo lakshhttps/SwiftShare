@@ -5,7 +5,8 @@ import { Room } from "./pages/Room";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Footer } from "./components/Footer";
 import { socket } from "./utils/socket";
-import { getActiveRoom, clearActiveRoom } from "./utils/activeRoom";
+import { getActiveRoom, saveActiveRoom, clearActiveRoom } from "./utils/activeRoom";
+import { getDeviceName } from "./utils/deviceName";
 
 function App() {
   const [view, setView] = useState("landing");
@@ -13,25 +14,58 @@ function App() {
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
+    function preventDefault(e) {
+      e.preventDefault();
+    }
+
+    window.addEventListener("dragover", preventDefault);
+    window.addEventListener("drop", preventDefault);
+
+    return () => {
+      window.removeEventListener("dragover", preventDefault);
+      window.removeEventListener("drop", preventDefault);
+    };
+  }, []);
+
+  useEffect(() => {
     const saved = getActiveRoom();
-    if (!saved) {
-      setCheckingSession(false);
+    if (saved) {
+      socket.emit(
+        "join-room",
+        { roomCode: saved.roomCode, deviceName: saved.deviceName },
+        (response) => {
+          if (response.error) {
+            clearActiveRoom();
+          } else {
+            setRoom({ roomCode: response.roomCode, peers: response.peers });
+            setView("room");
+          }
+          setCheckingSession(false);
+        }
+      );
       return;
     }
 
-    socket.emit(
-      "join-room",
-      { roomCode: saved.roomCode, deviceName: saved.deviceName },
-      (response) => {
-        if (response.error) {
-          clearActiveRoom();
-        } else {
-          setRoom({ roomCode: response.roomCode, peers: response.peers });
-          setView("room");
+    const roomFromUrl = new URLSearchParams(window.location.search).get("room");
+    if (roomFromUrl && roomFromUrl.length === 6) {
+      const deviceName = getDeviceName();
+      socket.emit(
+        "join-room",
+        { roomCode: roomFromUrl, deviceName },
+        (response) => {
+          window.history.replaceState({}, "", window.location.pathname);
+          if (!response.error) {
+            saveActiveRoom(response.roomCode, deviceName);
+            setRoom({ roomCode: response.roomCode, peers: response.peers });
+            setView("room");
+          }
+          setCheckingSession(false);
         }
-        setCheckingSession(false);
-      }
-    );
+      );
+      return;
+    }
+
+    setCheckingSession(false);
   }, []);
 
   function handleEnterRoom(roomCode, peers) {
