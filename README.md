@@ -1,66 +1,63 @@
-# SwiftShare
-
-A web app for sending files directly between two devices using WebRTC, inspired by SHAREit's peer-to-peer transfer model. There's no upload step and no server-side storage — once two devices are connected, files move straight from one browser to the other over a peer-to-peer data channel.
-
-## How it works
-
-1. One device creates a room and gets a 6-digit code (or a QR code to scan).
-2. The other device joins using that code.
-3. A signaling server (Socket.IO) introduces the two devices to each other — this is the only part of the process that touches our server.
-4. The two browsers negotiate a direct WebRTC connection using that introduction.
-5. Files are sliced into chunks and streamed directly across that connection.
-
-## Tech stack
-
-- **Frontend:** React (JavaScript, JSX) + Vite + Tailwind CSS
-- **Backend:** Node.js + Express + Socket.IO
-- **Transfer:** WebRTC (`RTCPeerConnection` + `RTCDataChannel`)
-- **Database:** None — rooms are ephemeral and live in memory only
-
-## Project structure
-
-```
-swiftshare/
-├── backend/
-│   └── src/
-│       ├── server.js            Express + Socket.IO bootstrap
-│       ├── socket/roomHandlers.js   Room join/leave + WebRTC signaling relay
-│       └── utils/roomManager.js     In-memory room/peer store
-└── frontend/
-    └── src/
-        ├── pages/                Landing, Home (create/join), Room (transfer)
-        ├── components/           Button, Card, ThemeToggle
-        ├── hooks/                useDarkMode, useWebRTC
-        └── utils/                socket client, signaling, device name, session
-```
-
-## Why these choices
-
-- **No database.** Rooms exist only for the length of a transfer session — an in-memory `Map` is enough, with an intentional trade-off: state resets if the server restarts, and this wouldn't scale across multiple server instances without something like Redis.
-- **Socket.IO over raw WebSockets.** We rely on its automatic reconnection, room broadcasting, and acknowledgement-style callbacks — all things you'd otherwise hand-roll on top of plain WebSockets.
-- **The server never sees file bytes.** Signaling only exchanges small JSON handshake messages (SDP offers/answers, ICE candidates). Actual file data flows directly between browsers over WebRTC.
-- **Plain JavaScript, not TypeScript.** A deliberate choice for this project — trading compile-time type safety for a smaller, simpler codebase.
-
-## Running locally
-
-**Backend**
+# ⚡ SwiftShare - Peer-to-Peer File Transfer, Instantly
+**SwiftShare** is a fast, no-friction web app that transfers files directly between two devices using **WebRTC** — no uploads, no accounts, no size limits.
+Create a room, share the code (or scan a QR), and files stream straight from one browser to the other in real time.
+---
+## ✨ Features
+### 🔐 Room-Based Sharing
+- Create a room and get a 6-digit code instantly
+- Join from another device using the code, or scan a **QR code** for one-tap join
+### ⚡ Direct P2P Transfer
+- Files move **directly between devices** via WebRTC data channels — nothing passes through the server
+- Live **progress bar and transfer speed** shown in real time for every file
+### 🔄 Reliable Connections
+- Automatically **reconnects** and rejoins your room if the connection drops
+- Recovers from failed peer connections without manual retry
+### 🌓 Clean, Responsive UI
+- Works across desktop and mobile browsers
+- Toggleable **dark mode**
+---
+## 📲 How to Run the App
+### Prerequisites
+- Node.js 18+
+- npm
+### Steps:
+1. **Clone the repository:**
 ```bash
-cd backend
-npm install
-cp .env.example .env
-npm run dev
+   git clone https://github.com/lakshhttps/SwiftShare.git
 ```
-
-**Frontend**
+2. **Set up the backend:**
 ```bash
-cd frontend
-npm install
-cp .env.example .env
-npm run dev
+   cd SwiftShare/backend
+   npm install
+   cp .env.example .env
+   npm run dev
 ```
+3. **Set up the frontend (in a new terminal):**
+```bash
+   cd SwiftShare/frontend
+   npm install
+   cp .env.example .env
+   npm run dev
+```
+4. **Test it:**
+   - Open `http://localhost:5173` in two browser tabs (or two devices on the same network)
+   - Create a room in one, join from the other, and send a file
+---
+## 📦 App Availability
+SwiftShare runs entirely in the browser — **no APK, no install required.** Just open the web link below on any modern desktop or mobile browser.
+---
+## 📎 WebApp Link
+👉  [SwiftShare Web](https://swift-share-ashen.vercel.app/)
+---
+## 📜 License
+This project is licensed under the **MIT License** – see the [LICENSE](LICENSE) file for details.
+---
+## 🙋 Author
+Built with ❤️ by **lakshhttps**
+- 🔗 [GitHub Profile](https://github.com/lakshhttps)
+- 💼 [LinkedIn](https://www.linkedin.com/in/laksh-arora-490ba725b/)
+- 🐦 [X (Twitter)](https://x.com/luckshhyyy)
 
-Open the frontend URL in two browser tabs (or two devices on the same network) to test a transfer.
-
-## Status
-
-Actively being built in phases: room signaling and WebRTC connection setup are working; file transfer over the data channel, transfer progress, QR code joining, and reconnection handling are in progress.
+If you found this useful, consider starring ⭐ the repository and sharing with others!
+---
+> 🏷️ Send Anything, Anywhere, Instantly.
