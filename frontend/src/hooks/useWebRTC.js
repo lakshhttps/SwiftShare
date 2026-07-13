@@ -7,6 +7,7 @@ const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
 export function useWebRTC(otherSocketId) {
   const [connectionState, setConnectionState] = useState("idle");
   const [dataChannel, setDataChannel] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
   const pcRef = useRef(null);
 
   useEffect(() => {
@@ -23,6 +24,10 @@ export function useWebRTC(otherSocketId) {
 
     pc.onconnectionstatechange = () => {
       setConnectionState(pc.connectionState);
+
+      if (pc.connectionState === "failed") {
+        setTimeout(() => setRetryCount((prev) => prev + 1), 2000);
+      }
     };
 
     function setupChannel(channel) {
@@ -56,15 +61,19 @@ export function useWebRTC(otherSocketId) {
     const removeSignalListener = onSignal(async ({ fromSocketId, data }) => {
       if (fromSocketId !== otherSocketId) return;
 
-      if (data.type === "offer") {
-        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        sendSignal(otherSocketId, { type: "answer", answer });
-      } else if (data.type === "answer") {
-        await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-      } else if (data.type === "ice-candidate") {
-        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+      try {
+        if (data.type === "offer") {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          sendSignal(otherSocketId, { type: "answer", answer });
+        } else if (data.type === "answer") {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+        } else if (data.type === "ice-candidate") {
+          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+        }
+      } catch (err) {
+        console.error(err);
       }
     });
 
@@ -75,7 +84,7 @@ export function useWebRTC(otherSocketId) {
       setDataChannel(null);
       setConnectionState("idle");
     };
-  }, [otherSocketId]);
+  }, [otherSocketId, retryCount]);
 
   return { connectionState, dataChannel };
 }

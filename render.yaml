@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: swiftshare-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm run start
+    envVars:
+      - key: CLIENT_ORIGIN
+        sync: false

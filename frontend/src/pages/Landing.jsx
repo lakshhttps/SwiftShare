@@ -1,4 +1,5 @@
 import { Button } from "../components/Button";
+import { Logo } from "../components/Logo";
 
 const FEATURES = [
   "No uploads, no waiting on server bandwidth",
@@ -17,9 +18,7 @@ export function Landing({ onGetStarted }) {
     <div className="min-h-screen flex flex-col items-center px-4 py-16 gap-24">
       <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-12 max-w-4xl w-full mt-10">
         <div className="animate-fade-in-up">
-          <h1 className="text-5xl font-bold text-slate-900 dark:text-white tracking-tight">
-            SwiftShare
-          </h1>
+          <Logo iconClassName="h-14" textClassName="text-4xl" />
           <p className="mt-4 text-lg text-slate-500 dark:text-slate-400">
             Files go straight from your device to theirs. Nothing passes through us.
           </p>

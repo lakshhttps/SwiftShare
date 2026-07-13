@@ -4,6 +4,7 @@ import { Home } from "./pages/Home";
 import { Room } from "./pages/Room";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Footer } from "./components/Footer";
+import { Logo } from "./components/Logo";
 import { socket } from "./utils/socket";
 import { getActiveRoom, saveActiveRoom, clearActiveRoom } from "./utils/activeRoom";
 import { getDeviceName } from "./utils/deviceName";
@@ -12,6 +13,44 @@ function App() {
   const [view, setView] = useState("landing");
   const [room, setRoom] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+
+  useEffect(() => {
+    function handleDisconnect() {
+      if (view === "room") {
+        setIsReconnecting(true);
+      }
+    }
+
+    function handleConnect() {
+      if (!isReconnecting) return;
+
+      const saved = getActiveRoom();
+      if (!saved) {
+        setIsReconnecting(false);
+        return;
+      }
+
+      socket.emit(
+        "join-room",
+        { roomCode: saved.roomCode, deviceName: saved.deviceName },
+        (response) => {
+          if (!response.error) {
+            setRoom({ roomCode: response.roomCode, peers: response.peers });
+          }
+          setIsReconnecting(false);
+        }
+      );
+    }
+
+    socket.on("disconnect", handleDisconnect);
+    socket.on("connect", handleConnect);
+
+    return () => {
+      socket.off("disconnect", handleDisconnect);
+      socket.off("connect", handleConnect);
+    };
+  }, [view, isReconnecting]);
 
   useEffect(() => {
     function preventDefault(e) {
@@ -86,9 +125,19 @@ function App() {
 
   return (
     <div className="relative">
+      <div className="absolute top-4 left-4">
+        <Logo iconClassName="h-8" textClassName="text-lg" />
+      </div>
+
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
+
+      {isReconnecting && (
+        <div className="fixed top-0 inset-x-0 bg-amber-500 text-white text-sm text-center py-1.5 z-50">
+          Connection lost. Reconnecting…
+        </div>
+      )}
 
       {view === "landing" && <Landing onGetStarted={() => setView("home")} />}
       {view === "home" && <Home onEnterRoom={handleEnterRoom} />}

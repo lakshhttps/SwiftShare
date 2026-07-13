@@ -14,48 +14,51 @@ export function useFileTransfer(dataChannel) {
     if (!dataChannel) return;
 
     function handleMessage(e) {
-      if (typeof e.data === "string") {
-        const message = JSON.parse(e.data);
+      try {
+        if (typeof e.data === "string") {
+          const message = JSON.parse(e.data);
 
-        if (message.type === "file-meta") {
-          incomingRef.current = {
-            name: message.name,
-            size: message.size,
-            chunks: [],
-            receivedBytes: 0,
-            startTime: Date.now(),
-          };
-          lastIncomingUpdateRef.current = 0;
-          setIncomingProgress({ name: message.name, size: message.size, receivedBytes: 0, speed: 0 });
+          if (message.type === "file-meta") {
+            incomingRef.current = {
+              name: message.name,
+              size: message.size,
+              chunks: [],
+              receivedBytes: 0,
+              startTime: Date.now(),
+            };
+            lastIncomingUpdateRef.current = 0;
+            setIncomingProgress({ name: message.name, size: message.size, receivedBytes: 0, speed: 0 });
+          }
+
+          if (message.type === "file-end" && incomingRef.current) {
+            const { name, size, chunks } = incomingRef.current;
+            const blob = new Blob(chunks);
+            incomingRef.current = null;
+            setReceivedFiles((prev) => [...prev, { name, size, blob }]);
+            setIncomingProgress(null);
+          }
+        } else if (incomingRef.current) {
+          incomingRef.current.chunks.push(e.data);
+          incomingRef.current.receivedBytes += e.data.byteLength;
+
+          const now = Date.now();
+          const isDone = incomingRef.current.receivedBytes >= incomingRef.current.size;
+
+          if (now - lastIncomingUpdateRef.current > PROGRESS_INTERVAL_MS || isDone) {
+            lastIncomingUpdateRef.current = now;
+            const elapsed = (now - incomingRef.current.startTime) / 1000;
+            const speed = elapsed > 0 ? incomingRef.current.receivedBytes / elapsed : 0;
+            setIncomingProgress({
+              name: incomingRef.current.name,
+              size: incomingRef.current.size,
+              receivedBytes: incomingRef.current.receivedBytes,
+              speed,
+            });
+          }
         }
-
-        if (message.type === "file-end" && incomingRef.current) {
-          const blob = new Blob(incomingRef.current.chunks);
-          setReceivedFiles((prev) => [
-            ...prev,
-            { name: incomingRef.current.name, size: incomingRef.current.size, blob },
-          ]);
-          incomingRef.current = null;
-          setIncomingProgress(null);
-        }
-      } else if (incomingRef.current) {
-        incomingRef.current.chunks.push(e.data);
-        incomingRef.current.receivedBytes += e.data.byteLength;
-
-        const now = Date.now();
-        const isDone = incomingRef.current.receivedBytes >= incomingRef.current.size;
-
-        if (now - lastIncomingUpdateRef.current > PROGRESS_INTERVAL_MS || isDone) {
-          lastIncomingUpdateRef.current = now;
-          const elapsed = (now - incomingRef.current.startTime) / 1000;
-          const speed = elapsed > 0 ? incomingRef.current.receivedBytes / elapsed : 0;
-          setIncomingProgress({
-            name: incomingRef.current.name,
-            size: incomingRef.current.size,
-            receivedBytes: incomingRef.current.receivedBytes,
-            speed,
-          });
-        }
+      } catch {
+        incomingRef.current = null;
+        setIncomingProgress(null);
       }
     }
 

@@ -15,15 +15,19 @@ const STATUS_LABELS = {
   connected: "Connected",
   "channel-open": "Connected",
   disconnected: "Disconnected",
-  failed: "Connection failed",
+  failed: "Connection lost. Retrying…",
   closed: "Disconnected",
 };
+
+const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
 export function Room({ roomCode, initialPeers, onLeaveRoom }) {
   const [files, setFiles] = useState([]);
   const [fileStatus, setFileStatus] = useState({});
   const [isDragging, setIsDragging] = useState(false);
   const [peers, setPeers] = useState(initialPeers);
+  const [isSending, setIsSending] = useState(false);
+  const [sizeWarning, setSizeWarning] = useState("");
 
   const otherPeers = peers.filter((p) => p.socketId !== socket.id);
   const otherSocketId = otherPeers[0]?.socketId ?? null;
@@ -50,7 +54,17 @@ export function Room({ roomCode, initialPeers, onLeaveRoom }) {
   }, []);
 
   function addFiles(fileList) {
-    setFiles((prev) => [...prev, ...Array.from(fileList)]);
+    const incoming = Array.from(fileList);
+    const tooLarge = incoming.filter((f) => f.size > MAX_FILE_SIZE);
+    const okFiles = incoming.filter((f) => f.size <= MAX_FILE_SIZE);
+
+    if (tooLarge.length > 0) {
+      setSizeWarning(`${tooLarge.map((f) => f.name).join(", ")} skipped — over the 200MB limit.`);
+    } else {
+      setSizeWarning("");
+    }
+
+    setFiles((prev) => [...prev, ...okFiles]);
   }
 
   function handleDrop(e) {
@@ -60,6 +74,7 @@ export function Room({ roomCode, initialPeers, onLeaveRoom }) {
   }
 
   async function handleSend(index, file) {
+    setIsSending(true);
     setFileStatus((prev) => ({ ...prev, [index]: { state: "sending", sentBytes: 0, speed: 0 } }));
 
     await sendFile(file, (sentBytes, totalBytes, speed) => {
@@ -67,6 +82,7 @@ export function Room({ roomCode, initialPeers, onLeaveRoom }) {
     });
 
     setFileStatus((prev) => ({ ...prev, [index]: { state: "sent", sentBytes: file.size, speed: 0 } }));
+    setIsSending(false);
   }
 
   function downloadFile(file) {
@@ -89,7 +105,9 @@ export function Room({ roomCode, initialPeers, onLeaveRoom }) {
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 py-16">
       <Card className="w-full max-w-md text-center">
         <p className="text-sm text-slate-500 dark:text-slate-400">Room code</p>
-        <p className="text-3xl font-bold tracking-widest text-brand-600">{roomCode}</p>
+        <p className={`text-3xl font-bold tracking-widest text-brand-600 ${otherPeers.length === 0 ? "animate-pulse" : ""}`}>
+          {roomCode}
+        </p>
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
           {otherPeers.length > 0 ? `${otherPeers[0].deviceName} — ${statusLabel}` : statusLabel}
         </p>
@@ -131,6 +149,8 @@ export function Room({ roomCode, initialPeers, onLeaveRoom }) {
           </label>
         </div>
 
+        {sizeWarning && <p className="mt-2 text-xs text-red-500">{sizeWarning}</p>}
+
         {files.length > 0 && (
           <ul className="mt-4 space-y-3 text-sm text-slate-700 dark:text-slate-300">
             {files.map((file, i) => {
@@ -151,7 +171,7 @@ export function Room({ roomCode, initialPeers, onLeaveRoom }) {
                     <Button
                       variant="secondary"
                       className="px-3 py-1 text-xs shrink-0"
-                      disabled={!isChannelOpen || status?.state === "sending" || status?.state === "sent"}
+                      disabled={!isChannelOpen || isSending || status?.state === "sent"}
                       onClick={() => handleSend(i, file)}
                     >
                       {status?.state === "sent" ? "Sent" : status?.state === "sending" ? "Sending…" : "Send"}
